@@ -1,0 +1,42 @@
+This is a mirror of http://www.vim.org/scripts/script.php?script_id=4219
+
+This script is intended for plugin developers.
+
+Vimball archives (or .vba, see vimscript #1509 for Vimball plugin) are a good way to distribute your plugin to users. They help users with plugin installation, in that users no longer need to know what their runtime directory is, to unpack some .zip file there containing plugin files. They do not even need to think about it. With a vimball the plugin installation happens entirely within Vim. All a user needs to do is open the vimball file in Vim directly, and follow the simple instruction that shows up in the status line of executing ":source %".
+
+mkvimball.vim will create a vimball for your plugin from your list of input files. The files can be specified on the command line, in an environment variable, or read from the standard input. Although the script can be normally installed in the user runtime directory, like any vimball, it is intended primarily for use from the command line, or from a Makefile that you use with your plugin source files. You can also run it with the :runtime or :source command from Vim, if you set :args appropriately, with the vimball name and with input file names.
+
+To be able to run the script on the command line, you can use a command line like:
+        vim -V1 -i NONE -u NORC -nNesS mkvimball.vim -c 'echo""|qall!' VimballName srcfiles...
+
+On Linux the script uses a carefully crafted shebang line equivalent to the above command, so if you make the script executable with `chmod +x mkvimball.vim`, you can run the script simply like:
+       ./mkvimball VimballName srcfiles ....
+
+On Windows there is no simple equivalent to the shebang line, but you can try a command like
+       ASSOC .vim="C:\Program Files\Vim\Vim73\vim.exe" -V1 -i NONE -u NORC -U NONE -nNesS % -c "echo ''|qall!"
+Here you should modify the path to the Vim executable to match the one on your system. However this will make all .vim scripts executable, and will make them all run with the above command line options.
+
+The script relies on the standard vimballPlugin to create or list the vimball archive. The script will normally set g:vimball_home to the current directory given as '.'. If the vimball to be created already exists, it will be overwritten.
+
+The names of files from the command line, that are found in or below the current directory, will be re-written to be relative to the current directory (as if with expand('%:.'). This is done mostly to work around some issues with Vim trying to match a file name with one of the existing buffers if possible upon open. But it is also a good sanity check. To remove a fixed prefix from the input file names, set the environment variable SRC_PATH_PREFIX to the prefix to be removed. Or set g:mkvimball_src_path_prefix variable on the command line before running the script, like:
+  mkvimball.vim --cmd 'let g:mkvimball_src_path_prefix="src/"' Vimball srcfiles...
+Note that the mkvimball script will not read the .vimrc file, so you can not specify the variable in there.
+
+To prevent the file names modification to make them relative to the current directory, you can specify the list of files as standard input to the command, like
+  VIMBALL_FILES=- mkvimball.vim VimballName <listfile.txt
+or in the VIMBALL_FILES environment variable, like
+  VIMBALL_FILES="plugin/file1.vim plugin/file2.vim" mkvimball.vim VimballName
+The script will split the variable value around spaces in this case, or with the regular expression given in g:mkvimball_delimiter_regexp variable.
+
+To read the list of input files from standad input, set VIMBALL_FILES to the value "-" (a single dash), or for Linux systems you may also set it empty (Windows does not have empty environment variables). You should also make sure standar input ends with an empty line or with a line containing just a single dot. If the end-of-file is reached without an empty line or a dot line, Vim will just script execution at that very point, before it can create the vimball, because in order to process the script Vim is running in ex mode (command mode).
+
+If you just pass a vimball file as the single argument to the script, you will get a listing of the vimball archive contents, created with :VimballList command provided by the standard vimball plugin.
+
+Instead of running the script from the command line, you may use :source or :runtime command in a running instance of Vim, and be sure to set script arguments with the :args command as a first step. If you want to :source mkvimball.vim in this way with only a vimball archive file as arguments, to get a listing of the archive, you might need to use the :messages command afterwards, like this:
+
+   :arglocal
+   :argdelete *
+   :argadd VimballFileName.vba
+   :runtime mkvimball.vim
+   :messages
+   :argglobal
